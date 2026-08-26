@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NPD Stage Gate Flowchart</title>
+<style>
+:root {
+  --ink: #1a1a1a;
+  --blue: #2f5fa8;
+  --diamond: #6d9ec9;
+  --no-red: #9a2a2a;
+  --gap-border: #999999;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: "Times New Roman", Times, serif;
+  color: var(--ink);
+  background: #f2f2f2;
+  margin: 0;
+  padding: 0;
+}
+.toc {
+  background: #ffffff;
+  padding: 14px 28px;
+  border-bottom: 1px solid #ccc;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+.toc h1 { font-size: 18px; margin: 0 18px 0 0; white-space: nowrap; }
+.toc a {
+  color: var(--blue);
+  text-decoration: none;
+  font-size: 14px;
+  border: 1px solid var(--blue);
+  border-radius: 3px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+.toc a:hover { background: var(--blue); color: #fff; }
+
+.legend {
+  max-width: 1500px;
+  margin: 16px auto 0 auto;
+  padding: 10px 20px;
+  background: #fff9e8;
+  border: 1px solid #e0d3a0;
+  font-size: 12.5px;
+  color: #555;
+}
+.legend b { color: #1a1a1a; }
+.dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 4px; vertical-align: middle; border: 1px solid rgba(0,0,0,0.35); }
+
+.stage-sheet {
+  background: #ffffff;
+  width: 1560px;
+  max-width: 96vw;
+  margin: 22px auto;
+  padding: 22px 32px 40px 32px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.stage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 12px;
+}
+.stage-title-block { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.stage-title-block .title { font-size: 21px; }
+.stage-title-block .title b { font-weight: bold; }
+.stage-title-block .trl { font-style: italic; color: #555; font-size: 13px; margin-left: 6px; }
+.signal {
+  width: 19px; height: 19px; border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.4);
+  display: inline-block;
+  box-shadow: inset 0 0 3px rgba(0,0,0,0.25);
+  flex: none;
+}
+.signal[data-status="green"] { background: #3cb043; }
+.signal[data-status="yellow"] { background: #f2c200; }
+.signal[data-status="red"] { background: #d64545; }
+.signal[data-status="pending"] { background: #bdbdbd; }
+
+.date-tracker {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.date-tracker label { display: flex; flex-direction: column; gap: 2px; color: #555; }
+.date-tracker input[type="date"] {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 3px 5px;
+  border: 1px solid #999;
+}
+.status-text { font-size: 12px; font-weight: bold; white-space: nowrap; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 118px 1fr 1fr 1fr 92px 92px 92px;
+  column-gap: 10px;
+  position: relative;
+}
+.grid::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 128px;
+  border-left: 1px dashed var(--gap-border);
+}
+.col-head {
+  text-align: center;
+  font-weight: bold;
+  font-size: 17px;
+  padding: 6px 0 10px 0;
+  border-bottom: none;
+  grid-row: 1;
+}
+.col-head.label { visibility: hidden; }
+.col-head.date { grid-column: span 3; }
+
+.row-label {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  font-size: 14px;
+  padding-right: 4px;
+}
+.cell {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  border: 1px dashed #000;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  margin: 6px 0;
+  background: #fff;
+  position: relative;
+}
+.cell .code { color: var(--blue); font-weight: bold; margin-right: 5px; }
+.cell.date-cell {
+  border-style: solid;
+  justify-content: center;
+  color: #777;
+  font-style: italic;
+  font-size: 11.5px;
+}
+.cell.activity { justify-content: flex-start; }
+.cell.gate {
+  border: none;
+  background: transparent;
+  padding: 0;
+  justify-content: center;
+  min-height: 128px;
+}
+.diamond-wrap {
+  width: 100%;
+  min-height: 128px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.diamond {
+  position: absolute;
+  inset: 0;
+  background: var(--diamond);
+  /* symmetric rhombus: top, right, bottom, left */
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+.diamond-text {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  font-size: 12.5px;
+  padding: 0 24%;
+}
+.diamond-text .code { display: block; color: #1a3a5c; font-weight: bold; margin-bottom: 2px; }
+.connector {
+  position: absolute;
+  top: 50%;
+  right: -11px;
+  width: 11px;
+  height: 2px;
+  background: var(--blue);
+  z-index: 2;
+}
+.connector::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+.connector::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -4px;
+  border-style: solid;
+  border-width: 5px 0 5px 7px;
+  border-color: transparent transparent transparent var(--blue);
+}
+.no-note {
+  grid-column: 2 / span 3;
+  font-size: 11px;
+  color: #555;
+  font-style: italic;
+  margin: -2px 0 6px 12px;
+}
+.no-note b { color: var(--no-red); font-style: normal; }
+.no-note .ref { color: var(--no-red); font-weight: bold; font-style: normal; }
+
+@media print {
+  body { background: #fff; }
+  .toc, .legend { display: none; }
+  .stage-sheet { box-shadow: none; margin: 0; page-break-after: always; width: 100%; }
+}
+</style>
+</head>
+<body>
+<nav class="toc">
+  <h1>NPD Stage Gate Flowchart</h1>
+  <a href="#stage1">Stage-1</a><a href="#stage2a">Stage-2A</a><a href="#stage2b1">Stage-2B (1 of 2)</a><a href="#stage2b2">Stage-2B (2 of 2)</a><a href="#stage3a">Stage-3A</a><a href="#stage3b">Stage-3B</a><a href="#stage4">Stage-4</a><a href="#review">Review</a>
+</nav>
+<div class="legend">
+  <b>Timeline status:</b>
+  <span class="dot" style="background:#3cb043"></span>On time &nbsp;
+  <span class="dot" style="background:#f2c200"></span>Ongoing, within target &nbsp;
+  <span class="dot" style="background:#d64545"></span>Delayed, past target &nbsp;
+  <span class="dot" style="background:#bdbdbd"></span>Not started / target not set &nbsp;
+  &mdash; enter each stage's Target completion, Actual start and Actual end dates to update its signal automatically.
+</div>
+
+<section class="stage-sheet" id="stage1">
+  
+  <div class="stage-header">
+    <div class="stage-title-block">
+      <span class="signal" data-status="pending" title="Timeline status"></span>
+      <span class="title"><b>Stage-1</b> &middot; Opportunity Identification</span>
+      <span class="trl">TRL 7 ENTRY</span>
+    </div>
+    <div class="date-tracker">
+      <label>Target completion<input type="date" class="inp-target"></label>
+      <label>Actual start<input type="date" class="inp-start"></label>
+      <label>Actual end<input type="date" class="inp-end"></label>
+      <span class="status-text">Not started / target not set</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col-head label"></div>
+    <div class="col-head">Activity</div>
+    <div class="col-head">Function</div>
+    <div class="col-head">Document</div>
+    <div class="col-head date">Date</div>
+    
+  <div class="row-label" style="grid-row:2;">Stage-1</div>
+  <div class="cell activity" style="grid-row:2;"><span class="code">Act-1.1</span>Idea card intake — TRL 6 handover, VOC from listening posts<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">NPD / APQP Team, Marketing / M&amp;S<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Idea Card, active idea list</div>
+  <div class="cell date-cell" style="grid-row:2;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:2;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:2;">End Date</div>
+
+  <div class="row-label" style="grid-row:3;">Gate-HoQ</div>
+  <div class="cell gate" style="grid-row:3;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-HoQ</span>Is HoQ to be made?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:3;">NPD / APQP Team, Technology Group<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">HoQ decision (Yes / No)</div>
+  <div class="cell date-cell" style="grid-row:3;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:3;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:3;">End Date</div>
+  <div class="no-note" style="grid-row:4;"><b>NO &rarr;</b> Back to <span class="ref">Stage-1 · Gate-1A</span> &mdash; Skip translation — go directly to Gate-1A</div>
+
+  <div class="row-label" style="grid-row:5;"></div>
+  <div class="cell activity" style="grid-row:5;"><span class="code">Act-1.2</span>Translate VOC into product attributes [QFD]<div class="connector"></div></div>
+  <div class="cell" style="grid-row:5;">Marketing / M&amp;S, Technology Group<div class="connector"></div></div>
+  <div class="cell" style="grid-row:5;">House of Quality, Quality Table</div>
+  <div class="cell date-cell" style="grid-row:5;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:5;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:5;">End Date</div>
+
+  <div class="row-label" style="grid-row:6;">Gate-1A</div>
+  <div class="cell gate" style="grid-row:6;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-1A</span>Is the VOC fully translated?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:6;">Marketing / M&amp;S, Technology Group<div class="connector"></div></div>
+  <div class="cell" style="grid-row:6;">Gate 1A decision record</div>
+  <div class="cell date-cell" style="grid-row:6;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:6;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:6;">End Date</div>
+  <div class="no-note" style="grid-row:7;"><b>NO &rarr;</b> Back to <span class="ref">Stage-1 · Act-1.2</span> &mdash; Go back to the customer / TRL 6 to close the open needs, then re-run the QFD</div>
+
+  <div class="row-label" style="grid-row:8;"></div>
+  <div class="cell activity" style="grid-row:8;"><span class="code">Act-1.3</span>Prioritise the active ideas — BAI and MEI<div class="connector"></div></div>
+  <div class="cell" style="grid-row:8;">Marketing / M&amp;S (BAI), Technology Group (MEI)<div class="connector"></div></div>
+  <div class="cell" style="grid-row:8;">BAI / MEI score sheet, MEI vs BAI plot</div>
+  <div class="cell date-cell" style="grid-row:8;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:8;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:8;">End Date</div>
+
+  <div class="row-label" style="grid-row:9;">Gate-1B</div>
+  <div class="cell gate" style="grid-row:9;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-1B</span>Is BAI + MEI ≥ 50, taken forward?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:9;">Marketing / M&amp;S, Technology Group<div class="connector"></div></div>
+  <div class="cell" style="grid-row:9;">Gate 1B decision record (P1–P4)</div>
+  <div class="cell date-cell" style="grid-row:9;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:9;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:9;">End Date</div>
+  <div class="no-note" style="grid-row:10;"><b>NO &rarr;</b> <span class="ref">Ends</span> &mdash; Regret the development, or park the idea in the Idea Bank for future review</div>
+
+  <div class="row-label" style="grid-row:11;"></div>
+  <div class="cell activity" style="grid-row:11;"><span class="code">Act-1.4</span>Allocate the idea — R&amp;D or Technology Group<div class="connector"></div></div>
+  <div class="cell" style="grid-row:11;">NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:11;">Allocation record, development owner named</div>
+  <div class="cell date-cell" style="grid-row:11;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:11;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:11;">End Date</div>
+
+  </div>
+</section>
+
+<section class="stage-sheet" id="stage2a">
+  
+  <div class="stage-header">
+    <div class="stage-title-block">
+      <span class="signal" data-status="pending" title="Timeline status"></span>
+      <span class="title"><b>Stage-2A</b> &middot; Steel Specification Finalisation</span>
+      <span class="trl">TRL 7</span>
+    </div>
+    <div class="date-tracker">
+      <label>Target completion<input type="date" class="inp-target"></label>
+      <label>Actual start<input type="date" class="inp-start"></label>
+      <label>Actual end<input type="date" class="inp-end"></label>
+      <span class="status-text">Not started / target not set</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col-head label"></div>
+    <div class="col-head">Activity</div>
+    <div class="col-head">Function</div>
+    <div class="col-head">Document</div>
+    <div class="col-head date">Date</div>
+    
+  <div class="row-label" style="grid-row:2;">Stage-2A</div>
+  <div class="cell activity" style="grid-row:2;"><span class="code">Act-2A.1</span>Take in the customer specification<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Marketing / M&amp;S → Technology Group<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Agreed customer specification / draft TDC requirement</div>
+  <div class="cell date-cell" style="grid-row:2;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:2;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:2;">End Date</div>
+
+  <div class="row-label" style="grid-row:3;"></div>
+  <div class="cell activity" style="grid-row:3;"><span class="code">Act-2A.2</span>Derive target chemistry and processing parameters<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">Technology Group<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">Target steel chemistry, processing parameter set</div>
+  <div class="cell date-cell" style="grid-row:3;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:3;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:3;">End Date</div>
+
+  <div class="row-label" style="grid-row:4;"></div>
+  <div class="cell activity" style="grid-row:4;"><span class="code">Act-2A.3</span>Identify critical and significant characteristics<div class="connector"></div></div>
+  <div class="cell" style="grid-row:4;">Technology Group, Quality Assurance<div class="connector"></div></div>
+  <div class="cell" style="grid-row:4;">Special characteristics list, timing plan, approx. cost</div>
+  <div class="cell date-cell" style="grid-row:4;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:4;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:4;">End Date</div>
+
+  <div class="row-label" style="grid-row:5;">Gate-2A</div>
+  <div class="cell gate" style="grid-row:5;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-2A</span>Does target chemistry meet the quality table?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:5;">Technology Group<div class="connector"></div></div>
+  <div class="cell" style="grid-row:5;">Gate 2A decision record</div>
+  <div class="cell date-cell" style="grid-row:5;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:5;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:5;">End Date</div>
+  <div class="no-note" style="grid-row:6;"><b>NO &rarr;</b> Back to <span class="ref">Stage-2A · Act-2A.2</span> &mdash; Revise the alloy design concept and repeat the modelling / laboratory work</div>
+
+  </div>
+</section>
+
+<section class="stage-sheet" id="stage2b1">
+  
+  <div class="stage-header">
+    <div class="stage-title-block">
+      <span class="signal" data-status="pending" title="Timeline status"></span>
+      <span class="title"><b>Stage-2B</b> &middot; Process Design — 1 of 2</span>
+      <span class="trl">TRL 7</span>
+    </div>
+    <div class="date-tracker">
+      <label>Target completion<input type="date" class="inp-target"></label>
+      <label>Actual start<input type="date" class="inp-start"></label>
+      <label>Actual end<input type="date" class="inp-end"></label>
+      <span class="status-text">Not started / target not set</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col-head label"></div>
+    <div class="col-head">Activity</div>
+    <div class="col-head">Function</div>
+    <div class="col-head">Document</div>
+    <div class="col-head date">Date</div>
+    
+  <div class="row-label" style="grid-row:2;">Stage-2B</div>
+  <div class="cell activity" style="grid-row:2;"><span class="code">Act-2B.1</span>Collect the process design inputs<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Technology Group, Plant / Manufacturing<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Process design input register</div>
+  <div class="cell date-cell" style="grid-row:2;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:2;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:2;">End Date</div>
+
+  <div class="row-label" style="grid-row:3;"></div>
+  <div class="cell activity" style="grid-row:3;"><span class="code">Act-2B.2</span>Assess plant capability; update PFMEA, control plan, work instructions<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">Plant / Manufacturing, Quality Assurance<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">Capability study, updated PFMEA / control plan / work instructions</div>
+  <div class="cell date-cell" style="grid-row:3;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:3;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:3;">End Date</div>
+
+  <div class="row-label" style="grid-row:4;"></div>
+  <div class="cell activity" style="grid-row:4;"><span class="code">Act-2B.3</span>Constraint mapping [GAP]<div class="connector"></div></div>
+  <div class="cell" style="grid-row:4;">NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:4;">Verified constraint (APQP) document</div>
+  <div class="cell date-cell" style="grid-row:4;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:4;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:4;">End Date</div>
+
+  <div class="row-label" style="grid-row:5;">Gate-2B-1</div>
+  <div class="cell gate" style="grid-row:5;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-2B-1</span>Technical approval of product / process design?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:5;">NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:5;">Gate 2B-1 decision record</div>
+  <div class="cell date-cell" style="grid-row:5;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:5;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:5;">End Date</div>
+  <div class="no-note" style="grid-row:6;"><b>NO &rarr;</b> Back to <span class="ref">Stage-2B · Act-2B.3</span> &mdash; Back to product and process design; close the constraint that failed and re-submit</div>
+
+  </div>
+</section>
+
+<section class="stage-sheet" id="stage2b2">
+  
+  <div class="stage-header">
+    <div class="stage-title-block">
+      <span class="signal" data-status="pending" title="Timeline status"></span>
+      <span class="title"><b>Stage-2B</b> &middot; Process Design — 2 of 2</span>
+      <span class="trl">TRL 7 · Cost, co-product, execution</span>
+    </div>
+    <div class="date-tracker">
+      <label>Target completion<input type="date" class="inp-target"></label>
+      <label>Actual start<input type="date" class="inp-start"></label>
+      <label>Actual end<input type="date" class="inp-end"></label>
+      <span class="status-text">Not started / target not set</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col-head label"></div>
+    <div class="col-head">Activity</div>
+    <div class="col-head">Function</div>
+    <div class="col-head">Document</div>
+    <div class="col-head date">Date</div>
+    
+  <div class="row-label" style="grid-row:2;">Stage-2B</div>
+  <div class="cell activity" style="grid-row:2;"><span class="code">Act-2B.4</span>Preliminary cost estimation, issued to Marketing [GAP]<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Technology Group → Marketing / M&amp;S<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Preliminary cost estimate sheet</div>
+  <div class="cell date-cell" style="grid-row:2;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:2;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:2;">End Date</div>
+
+  <div class="row-label" style="grid-row:3;"></div>
+  <div class="cell activity" style="grid-row:3;"><span class="code">Act-2B.5</span>Compare with competitor alloy cost [GAP]<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">Marketing / M&amp;S<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">Cost comparison note with catch-up actions</div>
+  <div class="cell date-cell" style="grid-row:3;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:3;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:3;">End Date</div>
+
+  <div class="row-label" style="grid-row:4;">Gate-2B-2</div>
+  <div class="cell gate" style="grid-row:4;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-2B-2</span>Is the alloy cost acceptable vs competitor?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:4;">Marketing / M&amp;S<div class="connector"></div></div>
+  <div class="cell" style="grid-row:4;">Gate 2B-2 decision record</div>
+  <div class="cell date-cell" style="grid-row:4;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:4;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:4;">End Date</div>
+  <div class="no-note" style="grid-row:5;"><b>NO &rarr;</b> Back to <span class="ref">Stage-2B · Act-2B.1</span> &mdash; Back to product and process design for a cheaper route; Marketing states the target cost to be met</div>
+
+  <div class="row-label" style="grid-row:6;"></div>
+  <div class="cell activity" style="grid-row:6;"><span class="code">Act-2B.6</span>Co-product management and co-product TDC [GAP]<div class="connector"></div></div>
+  <div class="cell" style="grid-row:6;">Technology Group → Marketing / M&amp;S<div class="connector"></div></div>
+  <div class="cell" style="grid-row:6;">Co-product TDC in system</div>
+  <div class="cell date-cell" style="grid-row:6;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:6;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:6;">End Date</div>
+
+  <div class="row-label" style="grid-row:7;">Gate-2B-3</div>
+  <div class="cell gate" style="grid-row:7;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-2B-3</span>Has Marketing decided the co-product route?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:7;">Marketing / M&amp;S<div class="connector"></div></div>
+  <div class="cell" style="grid-row:7;">Gate 2B-3 decision record</div>
+  <div class="cell date-cell" style="grid-row:7;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:7;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:7;">End Date</div>
+  <div class="no-note" style="grid-row:8;"><b>NO &rarr;</b> <span class="ref">Ends</span> &mdash; Hold the co-product with Marketing for disposition; trial volume booked against the main product only</div>
+
+  <div class="row-label" style="grid-row:9;"></div>
+  <div class="cell activity" style="grid-row:9;"><span class="code">Act-2B.7</span>Plan for start of execution — heats plan [GAP]<div class="connector"></div></div>
+  <div class="cell" style="grid-row:9;">NPD / APQP Team, Plant / Manufacturing, Marketing<div class="connector"></div></div>
+  <div class="cell" style="grid-row:9;">Execution plan with heats plan and trial schedule</div>
+  <div class="cell date-cell" style="grid-row:9;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:9;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:9;">End Date</div>
+
+  </div>
+</section>
+
+<section class="stage-sheet" id="stage3a">
+  
+  <div class="stage-header">
+    <div class="stage-title-block">
+      <span class="signal" data-status="pending" title="Timeline status"></span>
+      <span class="title"><b>Stage-3A</b> &middot; Small Scale Plant Trial</span>
+      <span class="trl">TRL 8</span>
+    </div>
+    <div class="date-tracker">
+      <label>Target completion<input type="date" class="inp-target"></label>
+      <label>Actual start<input type="date" class="inp-start"></label>
+      <label>Actual end<input type="date" class="inp-end"></label>
+      <span class="status-text">Not started / target not set</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col-head label"></div>
+    <div class="col-head">Activity</div>
+    <div class="col-head">Function</div>
+    <div class="col-head">Document</div>
+    <div class="col-head date">Date</div>
+    
+  <div class="row-label" style="grid-row:2;">Stage-3A</div>
+  <div class="cell activity" style="grid-row:2;"><span class="code">Act-3A.1</span>3A1 · Plant trial and characterisation<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Plant / Manufacturing, Quality Assurance<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Trial report, test certificates, samples dispatched</div>
+  <div class="cell date-cell" style="grid-row:2;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:2;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:2;">End Date</div>
+
+  <div class="row-label" style="grid-row:3;">Gate-3A-1</div>
+  <div class="cell gate" style="grid-row:3;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-3A-1</span>First heat: process chart compliance met?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:3;">Quality Assurance, Technology Group<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">Gate 3A-1 decision record</div>
+  <div class="cell date-cell" style="grid-row:3;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:3;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:3;">End Date</div>
+  <div class="no-note" style="grid-row:4;"><b>NO &rarr;</b> Back to <span class="ref">Stage-3A · Act-3A.1</span> &mdash; Fine tune parameters or chemistry and repeat the heat, within the agreed heat limit; beyond it, revisit the design</div>
+
+  <div class="row-label" style="grid-row:5;"></div>
+  <div class="cell activity" style="grid-row:5;"><span class="code">Act-3A.2</span>3A2 · Coupon sample evaluation by the customer<div class="connector"></div></div>
+  <div class="cell" style="grid-row:5;">Customer<div class="connector"></div></div>
+  <div class="cell" style="grid-row:5;">Customer coupon test report</div>
+  <div class="cell date-cell" style="grid-row:5;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:5;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:5;">End Date</div>
+
+  <div class="row-label" style="grid-row:6;"></div>
+  <div class="cell activity" style="grid-row:6;"><span class="code">Act-3A.3</span>3A3 · Coupon sample approval by the customer<div class="connector"></div></div>
+  <div class="cell" style="grid-row:6;">Customer → NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:6;">Coupon approval, change inputs log</div>
+  <div class="cell date-cell" style="grid-row:6;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:6;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:6;">End Date</div>
+
+  <div class="row-label" style="grid-row:7;">Gate-3A</div>
+  <div class="cell gate" style="grid-row:7;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-3A</span>Are 3A1–3A3 complete, go for customer trial?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:7;">NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:7;">Gate 3A decision record</div>
+  <div class="cell date-cell" style="grid-row:7;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:7;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:7;">End Date</div>
+  <div class="no-note" style="grid-row:8;"><b>NO &rarr;</b> Back to <span class="ref">Stage-3A · Act-3A.1</span> &mdash; Complete the missing sub-stage, or repeat the NPD cycle from Stage 3 with the customer&#x27;s inputs incorporated</div>
+
+  </div>
+</section>
+
+<section class="stage-sheet" id="stage3b">
+  
+  <div class="stage-header">
+    <div class="stage-title-block">
+      <span class="signal" data-status="pending" title="Timeline status"></span>
+      <span class="title"><b>Stage-3B</b> &middot; Industrial and Customer Trial</span>
+      <span class="trl">TRL 8 → TRL 9</span>
+    </div>
+    <div class="date-tracker">
+      <label>Target completion<input type="date" class="inp-target"></label>
+      <label>Actual start<input type="date" class="inp-start"></label>
+      <label>Actual end<input type="date" class="inp-end"></label>
+      <span class="status-text">Not started / target not set</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col-head label"></div>
+    <div class="col-head">Activity</div>
+    <div class="col-head">Function</div>
+    <div class="col-head">Document</div>
+    <div class="col-head date">Date</div>
+    
+  <div class="row-label" style="grid-row:2;">Stage-3B</div>
+  <div class="cell activity" style="grid-row:2;"><span class="code">Act-3B.1</span>3B1 · Plant trial and press shop samples<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Plant / Manufacturing, Quality Assurance<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Trial report, PPAP submission, samples dispatched</div>
+  <div class="cell date-cell" style="grid-row:2;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:2;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:2;">End Date</div>
+
+  <div class="row-label" style="grid-row:3;"></div>
+  <div class="cell activity" style="grid-row:3;"><span class="code">Act-3B.2</span>3B2 · Customer end shop trial<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">Customer (witnessed by Technology Group)<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">Customer trial report</div>
+  <div class="cell date-cell" style="grid-row:3;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:3;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:3;">End Date</div>
+
+  <div class="row-label" style="grid-row:4;"></div>
+  <div class="cell activity" style="grid-row:4;"><span class="code">Act-3B.3</span>3B3 · Customer grade approval<div class="connector"></div></div>
+  <div class="cell" style="grid-row:4;">Customer → Marketing / M&amp;S<div class="connector"></div></div>
+  <div class="cell" style="grid-row:4;">Formal grade approval letter</div>
+  <div class="cell date-cell" style="grid-row:4;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:4;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:4;">End Date</div>
+
+  <div class="row-label" style="grid-row:5;">Gate-3B</div>
+  <div class="cell gate" style="grid-row:5;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-3B</span>Grade formally approved by the customer?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:5;">Marketing / M&amp;S<div class="connector"></div></div>
+  <div class="cell" style="grid-row:5;">Gate 3B decision record</div>
+  <div class="cell date-cell" style="grid-row:5;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:5;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:5;">End Date</div>
+  <div class="no-note" style="grid-row:6;"><b>NO &rarr;</b> Back to <span class="ref">Stage-3A · Act-3A.1</span> &mdash; NPD cycle repeats from Stage 3 with the failure mode addressed in the design or the process</div>
+
+  <div class="row-label" style="grid-row:7;"></div>
+  <div class="cell activity" style="grid-row:7;"><span class="code">Act-3B.4</span>Make the final TDC in the system<div class="connector"></div></div>
+  <div class="cell" style="grid-row:7;">Technology Group, Quality Assurance<div class="connector"></div></div>
+  <div class="cell" style="grid-row:7;">Final TDC released</div>
+  <div class="cell date-cell" style="grid-row:7;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:7;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:7;">End Date</div>
+
+  </div>
+</section>
+
+<section class="stage-sheet" id="stage4">
+  
+  <div class="stage-header">
+    <div class="stage-title-block">
+      <span class="signal" data-status="pending" title="Timeline status"></span>
+      <span class="title"><b>Stage-4</b> &middot; Start of Commercialisation</span>
+      <span class="trl">TRL 9</span>
+    </div>
+    <div class="date-tracker">
+      <label>Target completion<input type="date" class="inp-target"></label>
+      <label>Actual start<input type="date" class="inp-start"></label>
+      <label>Actual end<input type="date" class="inp-end"></label>
+      <span class="status-text">Not started / target not set</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col-head label"></div>
+    <div class="col-head">Activity</div>
+    <div class="col-head">Function</div>
+    <div class="col-head">Document</div>
+    <div class="col-head date">Date</div>
+    
+  <div class="row-label" style="grid-row:2;">Stage-4</div>
+  <div class="cell activity" style="grid-row:2;"><span class="code">Act-4.1</span>Guided supply starts — Marketing preparation<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Marketing / M&amp;S, NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Launch plan, guided supply schedule</div>
+  <div class="cell date-cell" style="grid-row:2;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:2;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:2;">End Date</div>
+
+  <div class="row-label" style="grid-row:3;"></div>
+  <div class="cell activity" style="grid-row:3;"><span class="code">Act-4.2</span>Guided production 1 — first heats<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">Plant / Manufacturing, Quality Assurance, Customer<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">First heat compliance record, customer feedback report</div>
+  <div class="cell date-cell" style="grid-row:3;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:3;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:3;">End Date</div>
+
+  <div class="row-label" style="grid-row:4;">Gate-4-1</div>
+  <div class="cell gate" style="grid-row:4;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-4-1</span>Any fine tuning required after round 1?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:4;">Plant / Manufacturing, Quality Assurance, Customer<div class="connector"></div></div>
+  <div class="cell" style="grid-row:4;">Gate 4-1 decision record</div>
+  <div class="cell date-cell" style="grid-row:4;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:4;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:4;">End Date</div>
+  <div class="no-note" style="grid-row:5;"><b>NO &rarr;</b> Back to <span class="ref">Stage-4 · Act-4.2</span> &mdash; Fine tune the parameters, update the TDC if needed, repeat the round before moving on</div>
+
+  <div class="row-label" style="grid-row:6;"></div>
+  <div class="cell activity" style="grid-row:6;"><span class="code">Act-4.3</span>Closure document — round 1<div class="connector"></div></div>
+  <div class="cell" style="grid-row:6;">NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:6;">Round 1 closure document filed</div>
+  <div class="cell date-cell" style="grid-row:6;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:6;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:6;">End Date</div>
+
+  <div class="row-label" style="grid-row:7;"></div>
+  <div class="cell activity" style="grid-row:7;"><span class="code">Act-4.4</span>Guided production 2 — repeat supply<div class="connector"></div></div>
+  <div class="cell" style="grid-row:7;">Plant / Manufacturing, Quality Assurance, Customer<div class="connector"></div></div>
+  <div class="cell" style="grid-row:7;">Capability and variation review, customer reports</div>
+  <div class="cell date-cell" style="grid-row:7;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:7;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:7;">End Date</div>
+
+  <div class="row-label" style="grid-row:8;">Gate-4-2</div>
+  <div class="cell gate" style="grid-row:8;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-4-2</span>Fine tuning required after round 2?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:8;">Plant / Manufacturing, Quality Assurance, Customer<div class="connector"></div></div>
+  <div class="cell" style="grid-row:8;">Gate 4-2 decision record</div>
+  <div class="cell date-cell" style="grid-row:8;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:8;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:8;">End Date</div>
+  <div class="no-note" style="grid-row:9;"><b>NO &rarr;</b> Back to <span class="ref">Stage-4 · Act-4.4</span> &mdash; Correct the process, repeat the round and re-check capability before round 3</div>
+
+  <div class="row-label" style="grid-row:10;"></div>
+  <div class="cell activity" style="grid-row:10;"><span class="code">Act-4.5</span>Closure document — round 2<div class="connector"></div></div>
+  <div class="cell" style="grid-row:10;">NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:10;">Round 2 closure document filed</div>
+  <div class="cell date-cell" style="grid-row:10;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:10;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:10;">End Date</div>
+
+  <div class="row-label" style="grid-row:11;"></div>
+  <div class="cell activity" style="grid-row:11;"><span class="code">Act-4.6</span>Guided production 3 — ramp to industrial scale<div class="connector"></div></div>
+  <div class="cell" style="grid-row:11;">Plant / Manufacturing, Quality Assurance, Customer<div class="connector"></div></div>
+  <div class="cell" style="grid-row:11;">Industrial scale supply record</div>
+  <div class="cell date-cell" style="grid-row:11;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:11;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:11;">End Date</div>
+
+  <div class="row-label" style="grid-row:12;">Gate-4</div>
+  <div class="cell gate" style="grid-row:12;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-4</span>Has 5000 t been consumed to satisfaction?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:12;">Plant / Manufacturing, Quality Assurance, Customer<div class="connector"></div></div>
+  <div class="cell" style="grid-row:12;">Gate 4 decision record</div>
+  <div class="cell date-cell" style="grid-row:12;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:12;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:12;">End Date</div>
+  <div class="no-note" style="grid-row:13;"><b>NO &rarr;</b> Back to <span class="ref">Stage-4 · Act-4.6</span> &mdash; Continue guided supply with fine tuning until the volume and satisfaction criteria are both met</div>
+
+  <div class="row-label" style="grid-row:14;"></div>
+  <div class="cell activity" style="grid-row:14;"><span class="code">Act-4.7</span>Closure document — guided production<div class="connector"></div></div>
+  <div class="cell" style="grid-row:14;">NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:14;">Guided production closure document filed</div>
+  <div class="cell date-cell" style="grid-row:14;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:14;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:14;">End Date</div>
+
+  <div class="row-label" style="grid-row:15;"></div>
+  <div class="cell activity" style="grid-row:15;"><span class="code">Act-4.8</span>Product commercially launched<div class="connector"></div></div>
+  <div class="cell" style="grid-row:15;">Marketing / M&amp;S<div class="connector"></div></div>
+  <div class="cell" style="grid-row:15;">Financial returns commence; moves to post-launch review</div>
+  <div class="cell date-cell" style="grid-row:15;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:15;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:15;">End Date</div>
+
+  </div>
+</section>
+
+<section class="stage-sheet" id="review">
+  
+  <div class="stage-header">
+    <div class="stage-title-block">
+      <span class="signal" data-status="pending" title="Timeline status"></span>
+      <span class="title"><b>Review</b> &middot; Post-launch Review</span>
+      <span class="trl">MR MEETING</span>
+    </div>
+    <div class="date-tracker">
+      <label>Target completion<input type="date" class="inp-target"></label>
+      <label>Actual start<input type="date" class="inp-start"></label>
+      <label>Actual end<input type="date" class="inp-end"></label>
+      <span class="status-text">Not started / target not set</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col-head label"></div>
+    <div class="col-head">Activity</div>
+    <div class="col-head">Function</div>
+    <div class="col-head">Document</div>
+    <div class="col-head date">Date</div>
+    
+  <div class="row-label" style="grid-row:2;">Review</div>
+  <div class="cell activity" style="grid-row:2;"><span class="code">Act-R.1</span>Actual versus target time and cost of development<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:2;">Variance note, corrective action list</div>
+  <div class="cell date-cell" style="grid-row:2;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:2;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:2;">End Date</div>
+
+  <div class="row-label" style="grid-row:3;"></div>
+  <div class="cell activity" style="grid-row:3;"><span class="code">Act-R.2</span>Closure document — time &amp; cost<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:3;">Closure document filed</div>
+  <div class="cell date-cell" style="grid-row:3;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:3;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:3;">End Date</div>
+
+  <div class="row-label" style="grid-row:4;"></div>
+  <div class="cell activity" style="grid-row:4;"><span class="code">Act-R.3</span>Productivity and process capability review after 5000 t<div class="connector"></div></div>
+  <div class="cell" style="grid-row:4;">Plant / Manufacturing, Quality Assurance<div class="connector"></div></div>
+  <div class="cell" style="grid-row:4;">Capability and variation review report</div>
+  <div class="cell date-cell" style="grid-row:4;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:4;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:4;">End Date</div>
+
+  <div class="row-label" style="grid-row:5;"></div>
+  <div class="cell activity" style="grid-row:5;"><span class="code">Act-R.4</span>Closure document — productivity<div class="connector"></div></div>
+  <div class="cell" style="grid-row:5;">NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:5;">Closure document filed</div>
+  <div class="cell date-cell" style="grid-row:5;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:5;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:5;">End Date</div>
+
+  <div class="row-label" style="grid-row:6;">Gate-R</div>
+  <div class="cell gate" style="grid-row:6;">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text"><span class="code">Gate-R</span>Do productivity and capability meet expectation?</div>
+        <div class="connector"></div>
+      </div>
+    </div>
+  <div class="cell" style="grid-row:6;">Plant / Manufacturing, Quality Assurance<div class="connector"></div></div>
+  <div class="cell" style="grid-row:6;">Gate R decision record</div>
+  <div class="cell date-cell" style="grid-row:6;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:6;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:6;">End Date</div>
+  <div class="no-note" style="grid-row:7;"><b>NO &rarr;</b> <span class="ref">Ends</span> &mdash; If expectation is still not met after repeated corrective action, the product may be withdrawn from the market</div>
+
+  <div class="row-label" style="grid-row:8;"></div>
+  <div class="cell activity" style="grid-row:8;"><span class="code">Act-R.5</span>Learning: systemic and technical learning<div class="connector"></div></div>
+  <div class="cell" style="grid-row:8;">NPD / APQP Team, Technology Group<div class="connector"></div></div>
+  <div class="cell" style="grid-row:8;">Learnings register, MR meeting status summary</div>
+  <div class="cell date-cell" style="grid-row:8;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:8;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:8;">End Date</div>
+
+  <div class="row-label" style="grid-row:9;"></div>
+  <div class="cell activity" style="grid-row:9;"><span class="code">Act-R.6</span>Closure document — development<div class="connector"></div></div>
+  <div class="cell" style="grid-row:9;">NPD / APQP Team<div class="connector"></div></div>
+  <div class="cell" style="grid-row:9;">Development closure document filed</div>
+  <div class="cell date-cell" style="grid-row:9;">Target Date</div>
+  <div class="cell date-cell" style="grid-row:9;">Start Date</div>
+  <div class="cell date-cell" style="grid-row:9;">End Date</div>
+
+  </div>
+</section>
+
+<script>
+function computeStatus(target, start, end) {
+  if (!target) return "pending";
+  const today = new Date().toISOString().slice(0,10);
+  if (end) {
+    return end <= target ? "green" : "red";
+  }
+  if (start) {
+    return today <= target ? "yellow" : "red";
+  }
+  return "pending";
+}
+const STATUS_TEXT = {
+  green: "On time (completed within target)",
+  yellow: "Ongoing (within target timeline)",
+  red: "Delayed (past target timeline)",
+  pending: "Not started / target not set"
+};
+function refreshStage(stageId) {
+  const root = document.getElementById(stageId);
+  const target = root.querySelector('.inp-target').value;
+  const start = root.querySelector('.inp-start').value;
+  const end = root.querySelector('.inp-end').value;
+  const status = computeStatus(target, start, end);
+  const sig = root.querySelector('.signal');
+  sig.setAttribute('data-status', status);
+  root.querySelector('.status-text').textContent = STATUS_TEXT[status];
+}
+function initTrackers() {
+  document.querySelectorAll('.stage-sheet').forEach(sec => {
+    refreshStage(sec.id);
+    sec.querySelectorAll('input[type=date]').forEach(inp => {
+      inp.addEventListener('input', () => refreshStage(sec.id));
+    });
+  });
+}
+window.addEventListener('DOMContentLoaded', initTrackers);
+</script>
+</body>
+</html>
